@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ダイエットコーチ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: linear-gradient(135deg, #fff0f6, #f0f4ff); min-height: 100vh; }
+
+        .task-btn {
+            width: 100%;
+            border: 2px solid #dee2e6;
+            border-radius: 16px;
+            padding: 1rem 1.25rem;
+            background: #fff;
+            font-size: 1.1rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .task-btn.done {
+            border-color: #198754;
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+        .task-btn .check-circle {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            border: 2px solid #adb5bd;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .task-btn.done .check-circle {
+            background: #198754;
+            border-color: #198754;
+            color: #fff;
+        }
+        .message-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 1rem 1.25rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            font-size: 1rem;
+        }
+        .gohoubi-card {
+            background: linear-gradient(135deg, #fff3cd, #ffe69c);
+            border-radius: 16px;
+            padding: 1rem 1.25rem;
+            border: 2px solid #ffc107;
+        }
+        .renzoku-badge {
+            background: linear-gradient(135deg, #ff6b35, #f7c59f);
+            color: #fff;
+            border-radius: 20px;
+            padding: 0.4rem 1rem;
+            font-weight: bold;
+            font-size: 1rem;
+            display: inline-block;
+        }
+        .coin-badge {
+            background: linear-gradient(135deg, #f7b731, #f9ca24);
+            color: #7d5a00;
+            border-radius: 20px;
+            padding: 0.4rem 1rem;
+            font-weight: bold;
+            font-size: 1rem;
+            display: inline-block;
+        }
+        /* 部屋＋キャラクター */
+        .room-wrap {
+            position: relative;
+            width: 100%;
+            max-width: 360px;
+            margin: 0 auto 0.5rem;
+        }
+        .chara-label { font-size: 0.8rem; color: #aaa; text-align:center; margin-top: 4px; }
+
+        /* 体重カード */
+        .taiju-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 1rem 1.25rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+        .input-unit { position: relative; }
+        .input-unit input { padding-right: 3rem; }
+        .input-unit .unit {
+            position: absolute; right: 12px; top: 50%;
+            transform: translateY(-50%); color: #adb5bd; font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar" style="background: linear-gradient(90deg,#ff6b9d,#c44dff);">
+    <div class="container">
+        <span class="navbar-brand fw-bold text-white">🌸 ダイエットコーチ</span>
+        <div class="d-flex gap-2">
+            <a href="/profile" class="btn btn-outline-light btn-sm">プロフィール</a>
+            <a href="/admin" class="btn btn-outline-light btn-sm">タスク管理</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container py-4" style="max-width: 480px;">
+
+    <!-- バッジ行 -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        {% if renzoku > 0 %}
+            <span class="renzoku-badge">🔥 {{ renzoku }}日連続！</span>
+        {% else %}
+            <span class="renzoku-badge" style="background:linear-gradient(135deg,#adb5bd,#ced4da);">🔥 今日からスタート！</span>
+        {% endif %}
+        <span class="coin-badge">🪙 {{ coin_total }}枚</span>
+    </div>
+
+    <!-- 部屋＋キャラクター -->
+    <div class="room-wrap">
+        <svg width="100%" viewBox="0 0 360 260" xmlns="http://www.w3.org/2000/svg">
+
+            <!-- ── 部屋の背景 ── -->
+            <!-- 壁 -->
+            <rect x="0" y="0" width="360" height="200" fill="#fef9f0"/>
+            <!-- 床 -->
+            <rect x="0" y="200" width="360" height="60" fill="#e8d5b0"/>
+            <!-- 壁と床の境目 -->
+            <rect x="0" y="198" width="360" height="4" fill="#d4b896"/>
+
+            {% if room_stage >= 1 %}
+            <!-- ラグ -->
+            <ellipse cx="180" cy="225" rx="100" ry="22" fill="#f4a0b5" opacity="0.7"/>
+            <ellipse cx="180" cy="225" rx="88" ry="16" fill="#f7bfcc" opacity="0.5"/>
+            {% endif %}
+
+            {% if room_stage >= 2 %}
+            <!-- カーテン（左） -->
+            <rect x="0" y="0" width="40" height="200" fill="#ffb6c1" rx="0"/>
+            <path d="M0 0 Q20 30 0 60 Q20 90 0 120 Q20 150 0 180 L0 200 L40 200 L40 0Z" fill="#ff9ab5"/>
+            <!-- カーテン（右） -->
+            <rect x="320" y="0" width="40" height="200" fill="#ffb6c1" rx="0"/>
+            <path d="M360 0 Q340 30 360 60 Q340 90 360 120 Q340 150 360 180 L360 200 L320 200 L320 0Z" fill="#ff9ab5"/>
+            <!-- 窓 -->
+            <rect x="130" y="20" width="100" height="70" fill="#b3e5fc" rx="6"/>
+            <rect x="130" y="20" width="100" height="70" fill="none" stroke="#e0cfa0" stroke-width="4" rx="6"/>
+            <line x1="180" y1="20" x2="180" y2="90" stroke="#e0cfa0" stroke-width="3"/>
+            <line x1="130" y1="55" x2="230" y2="55" stroke="#e0cfa0" stroke-width="3"/>
+            <!-- 窓の外・空 -->
+            <rect x="134" y="24" width="44" height="28" fill="#87ceeb" rx="3"/>
+            <rect x="182" y="24" width="44" height="28" fill="#87ceeb" rx="3"/>
+            <circle cx="150" cy="36" r="8" fill="#fff" opacity="0.8"/>
+            <ellipse cx="165" cy="38" rx="12" ry="6" fill="#fff" opacity="0.6"/>
+            {% endif %}
+
+            {% if room_stage >= 3 %}
+            <!-- 観葉植物 -->
+            <!-- 鉢 -->
+            <path d="M44 230 L54 200 L74 200 L84 230Z" fill="#c4855a"/>
+            <rect x="40" y="228" width="48" height="8" fill="#a0683e" rx="2"/>
+            <!-- 葉 -->
+            <ellipse cx="64" cy="190" rx="18" ry="24" fill="#4caf50" transform="rotate(-15,64,190)"/>
+            <ellipse cx="64" cy="190" rx="18" ry="24" fill="#66bb6a" transform="rotate(15,64,190)"/>
+            <ellipse cx="64" cy="185" rx="10" ry="20" fill="#81c784"/>
+            {% endif %}
+
+            {% if room_stage >= 4 %}
+            <!-- ソファ -->
+            <rect x="250" y="185" width="105" height="45" fill="#ff8fab" rx="10"/>
+            <rect x="245" y="178" width="115" height="20" fill="#ff6b9d" rx="8"/>
+            <rect x="245" y="178" width="18" height="52" fill="#ff6b9d" rx="6"/>
+            <rect x="342" y="178" width="18" height="52" fill="#ff6b9d" rx="6"/>
+            <rect x="255" y="195" width="30" height="28" fill="#ffb3c6" rx="6"/>
+            <rect x="292" y="195" width="30" height="28" fill="#ffb3c6" rx="6"/>
+            {% endif %}
+
+            <!-- ── うさぎキャラクター ── -->
+            {% if chara_stage == 0 %}
+            <!-- ぷくぷくうさぎ -->
+            <g transform="translate(145, 85)">
+                <ellipse cx="46" cy="22" rx="10" ry="26" fill="#f9c8d8"/>
+                <ellipse cx="94" cy="22" rx="10" ry="26" fill="#f9c8d8"/>
+                <ellipse cx="46" cy="22" rx="6" ry="21" fill="#ffaac8"/>
+                <ellipse cx="94" cy="22" rx="6" ry="21" fill="#ffaac8"/>
+                <ellipse cx="70" cy="115" rx="46" ry="48" fill="#f9c8d8"/>
+                <ellipse cx="70" cy="66" rx="32" ry="30" fill="#f9c8d8"/>
+                <circle cx="56" cy="62" r="7" fill="#fff"/>
+                <circle cx="84" cy="62" r="7" fill="#fff"/>
+                <circle cx="57" cy="62" r="4" fill="#222"/>
+                <circle cx="85" cy="62" r="4" fill="#222"/>
+                <circle cx="58" cy="60" r="1.5" fill="#fff"/>
+                <circle cx="86" cy="60" r="1.5" fill="#fff"/>
+                <ellipse cx="70" cy="75" rx="4" ry="3" fill="#ff9ab5"/>
+                <path d="M66 78 Q70 83 74 78" stroke="#ff9ab5" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+                <ellipse cx="46" cy="72" rx="9" ry="6" fill="#ffb6c1" opacity="0.6"/>
+                <ellipse cx="94" cy="72" rx="9" ry="6" fill="#ffb6c1" opacity="0.6"/>
+                <circle cx="112" cy="128" r="10" fill="#fff"/>
+                <ellipse cx="20" cy="112" rx="13" ry="10" fill="#f9c8d8"/>
+                <ellipse cx="120" cy="112" rx="13" ry="10" fill="#f9c8d8"/>
+                <ellipse cx="48" cy="157" rx="20" ry="11" fill="#f9c8d8"/>
+                <ellipse cx="88" cy="157" rx="20" ry="11" fill="#f9c8d8"/>
+            </g>
+
+            {% elif chara_stage == 1 %}
+            <!-- ちょっとスリム -->
+            <g transform="translate(150, 88)">
+                <ellipse cx="46" cy="21" rx="9" ry="25" fill="#f9c8d8"/>
+                <ellipse cx="94" cy="21" rx="9" ry="25" fill="#f9c8d8"/>
+                <ellipse cx="46" cy="21" rx="5.5" ry="20" fill="#ffaac8"/>
+                <ellipse cx="94" cy="21" rx="5.5" ry="20" fill="#ffaac8"/>
+                <ellipse cx="70" cy="114" rx="41" ry="44" fill="#f9c8d8"/>
+                <ellipse cx="70" cy="66" rx="31" ry="29" fill="#f9c8d8"/>
+                <circle cx="56" cy="62" r="6.5" fill="#fff"/>
+                <circle cx="84" cy="62" r="6.5" fill="#fff"/>
+                <circle cx="57" cy="62" r="3.5" fill="#222"/>
+                <circle cx="85" cy="62" r="3.5" fill="#222"/>
+                <circle cx="58" cy="60" r="1.5" fill="#fff"/>
+                <circle cx="86" cy="60" r="1.5" fill="#fff"/>
+                <ellipse cx="70" cy="75" rx="3.5" ry="2.5" fill="#ff9ab5"/>
+                <path d="M66 78 Q70 83 74 78" stroke="#ff9ab5" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+                <ellipse cx="46" cy="72" rx="8" ry="5" fill="#ffb6c1" opacity="0.6"/>
+                <ellipse cx="94" cy="72" rx="8" ry="5" fill="#ffb6c1" opacity="0.6"/>
+                <circle cx="112" cy="126" r="9" fill="#fff"/>
+                <ellipse cx="21" cy="111" rx="11" ry="9" fill="#f9c8d8"/>
+                <ellipse cx="119" cy="111" rx="11" ry="9" fill="#f9c8d8"/>
+                <ellipse cx="49" cy="156" rx="18" ry="10" fill="#f9c8d8"/>
+                <ellipse cx="87" cy="156" rx="18" ry="10" fill="#f9c8d8"/>
+            </g>
+
+            {% elif chara_stage == 2 %}
+            <!-- もっとスリム -->
+            <g transform="translate(155, 90)">
+                <ellipse cx="47" cy="20" rx="8" ry="24" fill="#f9c8d8"/>
+                <ellipse cx="93" cy="20" rx="8" ry="24" fill="#f9c8d8"/>
+                <ellipse cx="47" cy="20" rx="5" ry="19" fill="#ffaac8"/>
+                <ellipse cx="93" cy="20" rx="5" ry="19" fill="#ffaac8"/>
+                <ellipse cx="70" cy="113" rx="34" ry="38" fill="#f9c8d8"/>
+                <ellipse cx="70" cy="67" rx="29" ry="28" fill="#f9c8d8"/>
+                <circle cx="57" cy="63" r="6" fill="#fff"/>
+                <circle cx="83" cy="63" r="6" fill="#fff"/>
+                <circle cx="58" cy="63" r="3.5" fill="#222"/>
+                <circle cx="84" cy="63" r="3.5" fill="#222"/>
+                <circle cx="59" cy="61" r="1.5" fill="#fff"/>
+                <circle cx="85" cy="61" r="1.5" fill="#fff"/>
+                <ellipse cx="70" cy="75" rx="3" ry="2.5" fill="#ff9ab5"/>
+                <path d="M66 78 Q70 84 74 78" stroke="#ff9ab5" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+                <ellipse cx="47" cy="73" rx="7" ry="4.5" fill="#ffb6c1" opacity="0.6"/>
+                <ellipse cx="93" cy="73" rx="7" ry="4.5" fill="#ffb6c1" opacity="0.6"/>
+                <circle cx="110" cy="124" r="8" fill="#fff"/>
+                <ellipse cx="23" cy="110" rx="10" ry="8" fill="#f9c8d8"/>
+                <ellipse cx="117" cy="110" rx="10" ry="8" fill="#f9c8d8"/>
+                <ellipse cx="50" cy="154" rx="16" ry="9" fill="#f9c8d8"/>
+                <ellipse cx="86" cy="154" rx="16" ry="9" fill="#f9c8d8"/>
+            </g>
+
+            {% elif chara_stage == 3 %}
+            <!-- かなりスリム -->
+            <g transform="translate(160, 92)">
+                <ellipse cx="48" cy="19" rx="7" ry="23" fill="#f9c8d8"/>
+                <ellipse cx="92" cy="19" rx="7" ry="23" fill="#f9c8d8"/>
+                <ellipse cx="48" cy="19" rx="4.5" ry="18" fill="#ffaac8"/>
+                <ellipse cx="92" cy="19" rx="4.5" ry="18" fill="#ffaac8"/>
+                <ellipse cx="70" cy="113" rx="26" ry="32" fill="#f9c8d8"/>
+                <ellipse cx="70" cy="68" rx="27" ry="27" fill="#f9c8d8"/>
+                <circle cx="58" cy="64" r="6" fill="#fff"/>
+                <circle cx="82" cy="64" r="6" fill="#fff"/>
+                <circle cx="59" cy="64" r="3.5" fill="#222"/>
+                <circle cx="83" cy="64" r="3.5" fill="#222"/>
+                <circle cx="60" cy="62" r="1.5" fill="#fff"/>
+                <circle cx="84" cy="62" r="1.5" fill="#fff"/>
+                <ellipse cx="70" cy="76" rx="3" ry="2" fill="#ff9ab5"/>
+                <path d="M66 79 Q70 85 74 79" stroke="#ff9ab5" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+                <ellipse cx="48" cy="73" rx="6.5" ry="4" fill="#ffb6c1" opacity="0.6"/>
+                <ellipse cx="92" cy="73" rx="6.5" ry="4" fill="#ffb6c1" opacity="0.6"/>
+                <circle cx="107" cy="122" r="7" fill="#fff"/>
+                <ellipse cx="26" cy="109" rx="9" ry="7" fill="#f9c8d8"/>
+                <ellipse cx="114" cy="109" rx="9" ry="7" fill="#f9c8d8"/>
+                <ellipse cx="51" cy="152" rx="14" ry="8" fill="#f9c8d8"/>
+                <ellipse cx="85" cy="152" rx="14" ry="8" fill="#f9c8d8"/>
+            </g>
+
+            {% else %}
+            <!-- スリム完成✨ -->
+            <text x="310" y="70" font-size="18">✨</text>
+            <text x="50" y="75" font-size="18">✨</text>
+            <g transform="translate(162, 93)">
+                <ellipse cx="48" cy="18" rx="7" ry="22" fill="#f9c8d8"/>
+                <ellipse cx="92" cy="18" rx="7" ry="22" fill="#f9c8d8"/>
+                <ellipse cx="48" cy="18" rx="4" ry="17" fill="#ffaac8"/>
+                <ellipse cx="92" cy="18" rx="4" ry="17" fill="#ffaac8"/>
+                <ellipse cx="70" cy="114" rx="20" ry="26" fill="#f9c8d8"/>
+                <ellipse cx="70" cy="68" rx="26" ry="26" fill="#f9c8d8"/>
+                <circle cx="58" cy="64" r="6" fill="#fff"/>
+                <circle cx="82" cy="64" r="6" fill="#fff"/>
+                <circle cx="59" cy="64" r="3.5" fill="#ff6b9d"/>
+                <circle cx="83" cy="64" r="3.5" fill="#ff6b9d"/>
+                <circle cx="60" cy="62" r="1.5" fill="#fff"/>
+                <circle cx="84" cy="62" r="1.5" fill="#fff"/>
+                <ellipse cx="70" cy="77" rx="3" ry="2" fill="#ff9ab5"/>
+                <path d="M65 80 Q70 87 75 80" stroke="#ff9ab5" stroke-width="2" fill="none" stroke-linecap="round"/>
+                <ellipse cx="48" cy="74" rx="6" ry="3.5" fill="#ffb6c1" opacity="0.7"/>
+                <ellipse cx="92" cy="74" rx="6" ry="3.5" fill="#ffb6c1" opacity="0.7"/>
+                <circle cx="104" cy="121" r="6" fill="#fff"/>
+                <ellipse cx="28" cy="109" rx="8" ry="6" fill="#f9c8d8"/>
+                <ellipse cx="112" cy="109" rx="8" ry="6" fill="#f9c8d8"/>
+                <ellipse cx="52" cy="151" rx="13" ry="7" fill="#f9c8d8"/>
+                <ellipse cx="84" cy="151" rx="13" ry="7" fill="#f9c8d8"/>
+            </g>
+            {% endif %}
+
+        </svg>
+
+        <!-- 部屋のステージ説明 -->
+        <div class="chara-label">
+            {% if room_stage == 0 %}🪙 10枚でラグが登場！
+            {% elif room_stage == 1 %}🪙 20枚でカーテンが登場！
+            {% elif room_stage == 2 %}🪙 30枚で観葉植物が登場！
+            {% elif room_stage == 3 %}🪙 50枚でソファが登場！
+            {% else %}部屋が完成！素敵だね🌸
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ご褒美 -->
+    {% if gohoubi %}
+    <div class="gohoubi-card mb-3">
+        🎁 <strong>ご褒美解除！</strong><br>{{ gohoubi }}
+    </div>
+    {% endif %}
+
+    <!-- コーチメッセージ -->
+    <div class="message-card mb-3">
+        🌸 <strong>コーチより：</strong> {{ message }}
+    </div>
+
+    <!-- 体重入力 -->
+    <div class="taiju-card mb-3">
+        <div class="d-flex align-items-center justify-content-between gap-2">
+            <div>
+                <div class="fw-bold">⚖️ 今日の体重</div>
+                {% if taiju_nyuryoku %}
+                    <div class="text-muted small">{{ taiju_nyuryoku }} kg 入力済み ✅
+                        {% if profile.taiju_mokuhyo %}
+                        （目標まであと {{ "%.1f"|format(taiju_nyuryoku - profile.taiju_mokuhyo) }} kg）
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="text-muted small">入力すると🪙1枚もらえる！</div>
+                {% endif %}
+            </div>
+            <form method="POST" action="/taiju" class="d-flex gap-2 align-items-center">
+                <div class="input-unit">
+                    <input type="number" name="taiju" step="0.1" min="30" max="200"
+                           class="form-control form-control-sm" style="width:90px;"
+                           value="{{ taiju_nyuryoku if taiju_nyuryoku else '' }}"
+                           placeholder="55.0" required>
+                    <span class="unit" style="font-size:0.75rem;">kg</span>
+                </div>
+                <button type="submit" class="btn btn-sm btn-outline-primary">入力</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 進捗バー -->
+    {% set kanryo_count = kanryo_ids | length %}
+    {% set total = tasks | length %}
+    <div class="mb-3">
+        <div class="d-flex justify-content-between small fw-bold mb-1">
+            {% if all_clear %}
+                <span class="text-success">🎉 今日のタスク全部クリア！</span>
+            {% elif kanryo_count == 0 %}
+                <span class="text-muted">今日はまだこれから！</span>
+            {% elif kanryo_count == total - 1 %}
+                <span class="text-warning">あと1個！もう少し！💪</span>
+            {% else %}
+                <span class="text-primary">{{ kanryo_count }}/{{ total }} できたよ！</span>
+            {% endif %}
+            <span class="text-muted">{{ kanryo_count }}/{{ total }}</span>
+        </div>
+        <div class="progress" style="height:12px; border-radius:8px;">
+            <div class="progress-bar {% if all_clear %}bg-success{% else %}bg-primary{% endif %}"
+                 style="width:{{ (kanryo_count / total * 100)|int if total > 0 else 0 }}%;
+                        border-radius:8px; transition:width 0.4s ease;">
+            </div>
+        </div>
+    </div>
+
+    <!-- タスク一覧 -->
+    <div class="d-flex flex-column gap-3 mb-4">
+        {% for task in tasks %}
+        <form method="POST" action="/check/{{ task.id }}">
+            <button type="submit" class="task-btn {{ 'done' if task.id in kanryo_ids else '' }}">
+                <div class="check-circle">
+                    {% if task.id in kanryo_ids %}✓{% endif %}
+                </div>
+                <span style="font-size:1.4rem;">{{ task.icon }}</span>
+                <span>{{ task.namae }}</span>
+                <span class="ms-auto text-muted small">🪙+1</span>
+            </button>
+        </form>
+        {% endfor %}
+    </div>
+
+    <!-- フッター -->
+    <div class="text-center text-muted small mb-2">
+        {{ today }} ／
+        <a href="/profile" class="text-muted">プロフィール変更</a>
+    </div>
+
+</div>
+</body>
+</html>
