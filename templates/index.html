@@ -391,6 +391,7 @@
     <!-- タスク一覧 -->
     <div class="d-flex flex-column gap-3 mb-4">
         {% for task in tasks %}
+        <div style="font-size:0.7rem;color:red;">DEBUG: id={{ task.id }} / namae={{ task.namae }} / icon={{ task.icon }}</div>
         <form method="POST" action="/check/{{ task.id }}">
             <button type="submit" class="task-btn {{ 'done' if task.id in kanryo_ids else '' }}">
                 <div class="check-circle">
