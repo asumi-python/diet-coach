@@ -10,12 +10,16 @@ app = Flask(__name__)
 
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
+_spreadsheet = None
 
 def get_spreadsheet():
-    creds_dict = json.loads(os.getenv('GOOGLE_CREDENTIALS_JSON'))
-    creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
-    gc = gspread.authorize(creds)
-    return gc.open_by_key(os.getenv('SPREADSHEET_ID'))
+    global _spreadsheet
+    if _spreadsheet is None:
+        creds_dict = json.loads(os.getenv('GOOGLE_CREDENTIALS_JSON'))
+        creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+        gc = gspread.authorize(creds)
+        _spreadsheet = gc.open_by_key(os.getenv('SPREADSHEET_ID'))
+    return _spreadsheet
 
 
 # ────────────────────────────────────────
@@ -24,7 +28,7 @@ def get_spreadsheet():
 
 def tasks_yomikomi():
     ws = get_spreadsheet().worksheet('タスク')
-    return ws.get_all_records()  # [{'id':..., 'namae':..., 'icon':...}, ...]
+    return ws.get_all_records()
 
 
 def kiroku_yomikomi():
@@ -43,16 +47,17 @@ def kiroku_yomikomi():
 
 def kiroku_hozon(kiroku_list):
     ws = get_spreadsheet().worksheet('記録')
-    ws.clear()
-    ws.append_row(['hi', 'kanryo_ids', 'all_clear', 'taiju', 'coin_ids'])
+    rows = [['hi', 'kanryo_ids', 'all_clear', 'taiju', 'coin_ids']]
     for k in kiroku_list:
-        ws.append_row([
+        rows.append([
             k['hi'],
             json.dumps(k.get('kanryo_ids', []), ensure_ascii=False),
             str(k.get('all_clear', False)),
             k.get('taiju') if k.get('taiju') is not None else '',
             json.dumps(k.get('coin_ids', []), ensure_ascii=False),
         ])
+    ws.clear()
+    ws.update('A1', rows)
 
 
 def profile_yomikomi():
@@ -72,12 +77,14 @@ def profile_yomikomi():
 def profile_hozon(profile):
     ws = get_spreadsheet().worksheet('プロフィール')
     ws.clear()
-    ws.append_row(['shincho', 'taiju_start', 'taiju_mokuhyo', 'coin_total'])
-    ws.append_row([
-        profile.get('shincho', 0),
-        profile.get('taiju_start', 0),
-        profile.get('taiju_mokuhyo', 0),
-        profile.get('coin_total', 0),
+    ws.update('A1', [
+        ['shincho', 'taiju_start', 'taiju_mokuhyo', 'coin_total'],
+        [
+            profile.get('shincho', 0),
+            profile.get('taiju_start', 0),
+            profile.get('taiju_mokuhyo', 0),
+            profile.get('coin_total', 0),
+        ]
     ])
 
 
@@ -162,9 +169,7 @@ def gohoubi_check(renzoku):
 
 @app.route('/')
 def top_page():
-    profile      = profile_yomikomi()
-    tasks        = tasks_yomikomi()
-    kiroku_list  = kiroku_yomikomi()
+    profile, tasks, kiroku_list = profile_yomikomi(), tasks_yomikomi(), kiroku_yomikomi()
     today_kiroku = today_kiroku_get(kiroku_list)
     renzoku      = renzoku_keisan(kiroku_list)
 
@@ -203,10 +208,8 @@ def top_page():
 
 @app.route('/check/<task_id>', methods=['POST'])
 def task_check(task_id):
-    tasks       = tasks_yomikomi()
-    kiroku_list = kiroku_yomikomi()
-    profile     = profile_yomikomi()
-    today_k     = today_kiroku_get(kiroku_list)
+    tasks, kiroku_list, profile = tasks_yomikomi(), kiroku_yomikomi(), profile_yomikomi()
+    today_k = today_kiroku_get(kiroku_list)
 
     if today_k is None:
         today_k = {'hi': today_str(), 'kanryo_ids': [], 'all_clear': False,
@@ -245,9 +248,8 @@ def task_check(task_id):
 
 @app.route('/taiju', methods=['POST'])
 def taiju_nyuryoku():
-    kiroku_list = kiroku_yomikomi()
-    profile     = profile_yomikomi()
-    today_k     = today_kiroku_get(kiroku_list)
+    kiroku_list, profile = kiroku_yomikomi(), profile_yomikomi()
+    today_k = today_kiroku_get(kiroku_list)
 
     taiju_str = request.form.get('taiju', '').strip()
     try:
