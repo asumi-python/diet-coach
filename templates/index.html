@@ -391,15 +391,14 @@
     <!-- タスク一覧 -->
     <div class="d-flex flex-column gap-3 mb-4">
         {% for task in tasks %}
-        <div style="font-size:0.7rem;color:red;">DEBUG: id={{ task.id }} / namae={{ task.namae }} / icon={{ task.icon }}</div>
         <form method="POST" action="/check/{{ task.id }}">
             <button type="submit" class="task-btn {{ 'done' if task.id in kanryo_ids else '' }}">
                 <div class="check-circle">
                     {% if task.id in kanryo_ids %}✓{% endif %}
                 </div>
-                <span style="font-size:1.4rem;">{{ task.icon }}</span>
-                <span>{{ task.namae }}</span>
-                <span class="ms-auto text-muted small">🪙+1</span>
+                <span style="font-size:1.4rem; flex-shrink:0;">{{ task.icon }}</span>
+                <span style="flex:1; min-width:0;">{{ task.namae }}</span>
+                <span class="text-muted small" style="flex-shrink:0;">🪙+1</span>
             </button>
         </form>
         {% endfor %}
