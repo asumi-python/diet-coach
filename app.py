@@ -28,7 +28,10 @@ def get_spreadsheet():
 
 def tasks_yomikomi():
     ws = get_spreadsheet().worksheet('タスク')
-    return ws.get_all_records()
+    rows = ws.get_all_values()
+    if len(rows) <= 1:
+        return []
+    return [{'id': r[0], 'namae': r[1], 'icon': r[2]} for r in rows[1:] if r[0]]
 
 
 def kiroku_yomikomi():
